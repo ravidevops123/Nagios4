@@ -1,0 +1,68 @@
+Link: https://totatca.com/install-and-configure-nagios-core-on-ubuntu/
+
+step 1: Update system
+sudo apt update && sudo apt upgrade -y
+
+Step 2 – Install Packages Required by Nagios Core
+sudo apt install -y autoconf bc gawk dc build-essential gcc libc6 make wget unzip apache2 php libapache2-mod-php libgd-dev libmcrypt-dev make libssl-dev snmp libnet-snmp-perl gettext
+
+Step 3 – Download and Extract Nagios Core
+mkdir nagioscore
+cd nagioscore
+sudo wget https://assets.nagios.com/downloads/nagioscore/releases/nagios-4.4.13.tar.gz
+sudo tar -xvf nagios-4.4.13.tar.gz
+ll
+
+Step 4: Compile and Install Nagios
+cd nagios-4.4.13
+sudo ./configure --with-httpd-conf=/etc/apache2/sites-enabled
+sudo make all
+sudo make install-groups-users
+sudo usermod -a -G nagios www-data
+sudo make install
+sudo make install-daemoninit
+sudo make install-init
+sudo make install-commandmode
+sudo make install-config
+sudo make install-webconf
+sudo a2enmod rewrite cgi
+sudo htpasswd -c /usr/local/nagios/etc/htpasswd.users nagiosadmin
+New password: nagiosadmin
+Re-type New Password: nagiosadmin
+
+Step 5 – Install and Configure Nagios Plugins and NRPE Plugins
+sudo apt install monitoring-plugins nagios-nrpe-plugin -y
+cd /usr/local/nagios/etc/
+ls
+sudo mkdir servers
+ls
+sudo vi nagios.cfg
+Uncomment the line below to define the server hosts configuration
+cfg_dir=/usr/local/nagios/etc/servers
+sudo vim resource.cfg
+Add the line below to define the path binary files of Nagios Monitoring Plugins
+$USER1$=/usr/lib/nagios/plugins
+sudo vi objects/contacts.cfg
+enter our mail id ie., polishetti8@gmail.com
+sudo vi objects/commands.cfg
+Add new content below to the end of the file.
+define command{
+        command_name check_nrpe
+        command_line $USER1$/check_nrpe -H $HOSTADDRESS$ -c $ARG1$
+}
+
+Step 6 – Adjust Firewall
+sudo ufw enable
+sudo ufw allow 80
+sudo ufw allow 443
+sudo ufw allow 22
+sudo ufw reload
+sudo ufw status
+
+Step 7 – Access Nagios Core Server via the web interface
+sudo systemctl restart apache2
+sudo systemctl restart nagios
+sudo systemctl enable apache2
+sudo systemctl enable nagios
+sudo systemctl status apache2
+sudo systemctl status nagios
