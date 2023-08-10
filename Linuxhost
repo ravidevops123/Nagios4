@@ -1,0 +1,92 @@
+Link: https://totatca.com/add-linux-host-to-nagios-server/
+
+On the Linux Host
+Step 1 – Install Nagios Plugins and NRPE on the Linux host
+sudo apt update
+sudo apt install nagios-nrpe-server nagios-plugins -y
+
+Step 2 – Configure Nagios NRPE Agent
+sudo vi /etc/nagios/nrpe.cfg
+Locate the line server_address and add the following content:
+server_address = 192.168.1.126 #IP of the Linux Host
+Next, locate the line allowed_hosts and add the IP address of the Nagios Server
+allowed_hosts = 127.0.0.1, 192.168.1.16 #Add IP of the Nagios Server
+Now, restart the NRPE service to apply the changes:
+sudo systemctl restart nagios-nrpe-server
+sudo systemctl enable nagios-nrpe-server
+
+Step 3 – Adjust Firewall on Linux Host
+sudo ufw enable
+sudo ufw allow 5666
+sudo ufw reload
+sudo ufw status
+
+On the Nagios Server
+Step 4 – Install NRPE on the Nagios Server
+sudo apt install nagios-nrpe-server -y
+
+Step 5 – Add Linux Host on Nagios Server
+cd /usr/local/nagios/etc/
+ll
+sudo chmod 775 servers
+sudo chown nagios:nagios servers
+ll
+cd servers
+sudo vi linuxhost-1.cfg
+#Replace :
+# host_name = Your-Hostname
+# alias = Your-Alias
+# address = Your-IP address of host
+
+define host{
+use                     linux-server
+host_name               linuxhost-1
+alias                   LinuxHost-1
+address                 192.168.1.126
+}
+
+define service{
+use                             local-service
+host_name                       linuxhost-1
+service_description             Root / Partition
+check_command                   check_nrpe!check_disk
+}
+
+define service{
+use                             local-service
+host_name                       linuxhost-1
+service_description             /mnt Partition
+check_command                   check_nrpe!check_mnt_disk
+}
+
+define service{
+use                             local-service
+host_name                       linuxhost-1
+service_description             Current Users
+check_command                   check_nrpe!check_users
+}
+
+define service{
+use                             local-service
+host_name                       linuxhost-1
+service_description             Total Processes
+check_command                   check_nrpe!check_total_procs
+}
+
+define service{
+use                             local-service
+host_name                       linuxhost-1
+service_description             Current Load
+check_command                   check_nrpe!check_load
+}
+sudo chmod 664 linuxhost-1.cfg
+sudo chown nagios:nagios linuxhost-1.cfg
+ll
+sudo /usr/local/nagios/bin/nagios -v /usr/local/nagios/etc/nagios.cfg
+sudo systemctl restart nagios
+
+Step 6 – Adjust Firewall on the Nagios Server
+sudo ufw enable
+sudo ufw allow 5666
+sudo ufw reload
+sudo ufw status
